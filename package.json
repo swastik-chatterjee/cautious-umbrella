@@ -1,0 +1,17 @@
+{
+  "name": "ns-vue-weight-tracker",
+  "main": "app/app.ts",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@nativescript/core": "~8.6.0",
+    "nativescript-sqlite": "^2.8.7",
+    "nativescript-vue": "^3.0.0"
+  },
+  "devDependencies": {
+    "@nativescript/android": "~8.6.0",
+    "@nativescript/ios": "~8.6.0",
+    "@nativescript/webpack": "~5.0.14",
+    "typescript": "~5.1.0"
+  }
+}

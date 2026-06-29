@@ -1,0 +1,19 @@
+workflows:
+  android-build:
+    name: NativeScript Android Production Build
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 18
+      java: 17
+    scripts:
+      - name: Install NativeScript CLI and Node modules
+        script: |
+          npm install -g nativescript
+          npm install
+      - name: Build Android Release Package
+        script: |
+          ns build android --release --no-hmr
+    artifacts:
+      - platforms/android/app/build/outputs/apk/release/*.apk
+      - platforms/android/app/build/outputs/bundle/release/*.aab
