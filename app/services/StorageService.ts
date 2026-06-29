@@ -1,77 +1,50 @@
-import Sqlite from 'nativescript-sqlite';
-
 /**
- * Represents a weight record in the database
+ * Storage Service for Weight Tracker
+ * Uses localStorage for persistent local storage
  */
+
 export interface WeightRecord {
-  id?: number;
+  id: string;
   CREATED_AT: string;
   WEIGHT: number;
 }
 
-/**
- * Service for managing weight records in SQLite database
- * Handles all database operations in a centralized location
- */
 export class StorageService {
-  private db: any = null;
-  private readonly DB_NAME = 'weight_tracker.db';
-  private readonly TABLE_NAME = 'weight_records';
-
-  /**
-   * Initializes the SQLite database and creates tables if needed
-   */
-  async initDb(): Promise<void> {
-    if (this.db) return;
-
-    try {
-      this.db = await new Sqlite(this.DB_NAME);
-      await this.db.execSQL(
-        `CREATE TABLE IF NOT EXISTS ${this.TABLE_NAME} (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          CREATED_AT TEXT NOT NULL,
-          WEIGHT REAL NOT NULL
-        )`
-      );
-    } catch (error) {
-      console.error('Database initialization failed:', error);
-      throw new Error('Failed to initialize database');
-    }
-  }
+  private readonly STORAGE_KEY = 'weight_records';
 
   /**
    * Retrieves all weight records ordered by creation date (newest first)
    */
-  async getAllRecords(): Promise<WeightRecord[]> {
+  getAllRecords(): WeightRecord[] {
     try {
-      await this.initDb();
-      const rows = await this.db.all(
-        `SELECT id, CREATED_AT, WEIGHT FROM ${this.TABLE_NAME} ORDER BY CREATED_AT DESC`,
-        []
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (!stored) return [];
+      
+      const records: WeightRecord[] = JSON.parse(stored);
+      return records.sort((a, b) => 
+        new Date(b.CREATED_AT).getTime() - new Date(a.CREATED_AT).getTime()
       );
-
-      return rows.map((row: any) => ({
-        id: row[0],
-        CREATED_AT: row[1],
-        WEIGHT: row[2]
-      }));
     } catch (error) {
       console.error('Failed to retrieve records:', error);
-      throw new Error('Failed to load weight records');
+      return [];
     }
   }
 
   /**
-   * Adds a new weight record to the database
+   * Adds a new weight record to storage
    */
-  async addRecord(weight: number, createdAt?: string): Promise<void> {
+  addRecord(weight: number, createdAt?: string): WeightRecord {
     try {
-      await this.initDb();
-      const timestamp = createdAt || new Date().toISOString();
-      await this.db.execSQL(
-        `INSERT INTO ${this.TABLE_NAME} (CREATED_AT, WEIGHT) VALUES (?, ?)`,
-        [timestamp, weight]
-      );
+      const records = this.getAllRecords();
+      const newRecord: WeightRecord = {
+        id: Date.now().toString(),
+        CREATED_AT: createdAt || new Date().toISOString(),
+        WEIGHT: weight
+      };
+      
+      records.unshift(newRecord);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(records));
+      return newRecord;
     } catch (error) {
       console.error('Failed to add record:', error);
       throw new Error('Failed to save weight record');
@@ -81,13 +54,17 @@ export class StorageService {
   /**
    * Updates an existing weight record
    */
-  async updateRecord(id: number, weight: number): Promise<void> {
+  updateRecord(id: string, weight: number): void {
     try {
-      await this.initDb();
-      await this.db.execSQL(
-        `UPDATE ${this.TABLE_NAME} SET WEIGHT = ? WHERE id = ?`,
-        [weight, id]
-      );
+      const records = this.getAllRecords();
+      const index = records.findIndex(r => r.id === id);
+      
+      if (index === -1) {
+        throw new Error('Record not found');
+      }
+      
+      records[index].WEIGHT = weight;
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(records));
     } catch (error) {
       console.error('Failed to update record:', error);
       throw new Error('Failed to update weight record');
@@ -97,13 +74,11 @@ export class StorageService {
   /**
    * Deletes a weight record by ID
    */
-  async deleteRecord(id: number): Promise<void> {
+  deleteRecord(id: string): void {
     try {
-      await this.initDb();
-      await this.db.execSQL(
-        `DELETE FROM ${this.TABLE_NAME} WHERE id = ?`,
-        [id]
-      );
+      const records = this.getAllRecords();
+      const filtered = records.filter(r => r.id !== id);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filtered));
     } catch (error) {
       console.error('Failed to delete record:', error);
       throw new Error('Failed to delete weight record');
@@ -113,15 +88,14 @@ export class StorageService {
   /**
    * Gets statistics about recorded weights
    */
-  async getStatistics(): Promise<{
+  getStatistics(): {
     totalRecords: number;
     averageWeight: number;
     highestWeight: number;
     lowestWeight: number;
-  }> {
+  } {
     try {
-      await this.initDb();
-      const records = await this.getAllRecords();
+      const records = this.getAllRecords();
 
       if (records.length === 0) {
         return {
@@ -137,7 +111,7 @@ export class StorageService {
 
       return {
         totalRecords: records.length,
-        averageWeight: sum / records.length,
+        averageWeight: parseFloat((sum / records.length).toFixed(2)),
         highestWeight: Math.max(...weights),
         lowestWeight: Math.min(...weights)
       };
@@ -148,12 +122,11 @@ export class StorageService {
   }
 
   /**
-   * Clears all records from the database (use with caution)
+   * Clears all records from storage (use with caution)
    */
-  async clearAllRecords(): Promise<void> {
+  clearAllRecords(): void {
     try {
-      await this.initDb();
-      await this.db.execSQL(`DELETE FROM ${this.TABLE_NAME}`);
+      localStorage.removeItem(this.STORAGE_KEY);
     } catch (error) {
       console.error('Failed to clear records:', error);
       throw new Error('Failed to clear database');

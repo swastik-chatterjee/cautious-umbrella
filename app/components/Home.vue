@@ -102,20 +102,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { Dialogs } from '@nativescript/core';
-import Sqlite from 'nativescript-sqlite';
-
-interface WeightRecord {
-  id: number;
-  CREATED_AT: string;
-  WEIGHT: number;
-}
+import { storageService, WeightRecord } from '~/services/StorageService';
 
 // State Management
 const records = ref<WeightRecord[]>([]);
 const weightInput = ref<string>('');
 const isEditing = ref<boolean>(false);
-const editingRecordId = ref<number | null>(null);
-let dbInstance: any = null;
+const editingRecordId = ref<string | null>(null);
 
 // Computed Properties
 const latestWeight = computed(() => {
@@ -132,37 +125,10 @@ const lowestWeight = computed(() => {
   return Math.min(...records.value.map(r => r.WEIGHT)).toFixed(1);
 });
 
-// Database Initialization
-async function initDb(): Promise<void> {
-  if (dbInstance) return;
+// Load Records from Storage
+function loadRecords(): void {
   try {
-    dbInstance = await new Sqlite('weight_tracker.db');
-    await dbInstance.execSQL(
-      `CREATE TABLE IF NOT EXISTS weight_records (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        CREATED_AT TEXT NOT NULL,
-        WEIGHT REAL NOT NULL
-      )`
-    );
-  } catch (error) {
-    console.error('Database initialization error:', error);
-    Dialogs.alert('Failed to initialize database. Please restart the app.');
-  }
-}
-
-// Load Records from Database
-async function loadRecords(): Promise<void> {
-  try {
-    await initDb();
-    const rows = await dbInstance.all(
-      'SELECT id, CREATED_AT, WEIGHT FROM weight_records ORDER BY CREATED_AT DESC',
-      []
-    );
-    records.value = rows.map((row: any) => ({
-      id: row[0],
-      CREATED_AT: row[1],
-      WEIGHT: row[2]
-    }));
+    records.value = storageService.getAllRecords();
   } catch (error) {
     console.error('Failed to load records:', error);
     Dialogs.alert('Failed to load weight records.');
@@ -179,7 +145,7 @@ function validateWeight(weight: number): boolean {
 }
 
 // Save or Update Record
-async function handleSave(): Promise<void> {
+function handleSave(): void {
   trimInput();
 
   if (!weightInput.value) {
@@ -195,25 +161,16 @@ async function handleSave(): Promise<void> {
   }
 
   try {
-    await initDb();
-
     if (isEditing.value && editingRecordId.value !== null) {
-      await dbInstance.execSQL(
-        'UPDATE weight_records SET WEIGHT = ? WHERE id = ?',
-        [numericWeight, editingRecordId.value]
-      );
+      storageService.updateRecord(editingRecordId.value, numericWeight);
     } else {
-      const currentTimestamp = new Date().toISOString();
-      await dbInstance.execSQL(
-        'INSERT INTO weight_records (CREATED_AT, WEIGHT) VALUES (?, ?)',
-        [currentTimestamp, numericWeight]
-      );
+      storageService.addRecord(numericWeight);
     }
 
     weightInput.value = '';
     isEditing.value = false;
     editingRecordId.value = null;
-    await loadRecords();
+    loadRecords();
   } catch (error) {
     console.error('Save operation failed:', error);
     Dialogs.alert('Failed to save weight record.');
@@ -235,18 +192,17 @@ function cancelEdit(): void {
 }
 
 // Delete Record with Confirmation
-function confirmDelete(id: number): void {
+function confirmDelete(id: string): void {
   Dialogs.confirm({
     title: 'Delete Entry',
     message: 'Are you sure you want to delete this weight record?',
     okButtonText: 'Delete',
     cancelButtonText: 'Cancel'
-  }).then(async (confirmed) => {
+  }).then((confirmed) => {
     if (confirmed) {
       try {
-        await initDb();
-        await dbInstance.execSQL('DELETE FROM weight_records WHERE id = ?', [id]);
-        await loadRecords();
+        storageService.deleteRecord(id);
+        loadRecords();
       } catch (error) {
         console.error('Delete operation failed:', error);
         Dialogs.alert('Failed to delete weight record.');
