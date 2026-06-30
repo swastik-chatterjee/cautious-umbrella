@@ -1,1 +1,15 @@
-import { NativeScriptConfig } from '@nativescript/core';\n\nexport default {\n  id: 'org.nativescript.weighttracker',\n  appPath: 'app',\n  appResourcesPath: 'app/App_Resources',\n  android: {\n    v8Flags: '--expose_gc',\n    markingMode: 'none',\n  },\n  cli: {\n    packageManager: 'npm',\n    telemetryOptOut: true,\n  },\n} as NativeScriptConfig;\n
+import { NativeScriptConfig } from '@nativescript/core';
+
+export default {
+  id: 'org.nativescript.weighttracker',
+  appPath: 'app',
+  appResourcesPath: 'app/App_Resources',
+  android: {
+    v8Flags: '--expose_gc',
+    markingMode: 'none',
+  },
+  cli: {
+    packageManager: 'npm',
+    telemetryOptOut: true,
+  },
+} as NativeScriptConfig;
