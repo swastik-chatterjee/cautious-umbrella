@@ -1,16 +1,1 @@
-{
-  "compilerOptions": {
-    "module": "esnext",
-    "target": "es2022",
-    "moduleResolution": "node",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "noEmitHelpers": true,
-    "lib": ["es2022", "dom"],
-    "baseUrl": ".",
-    "paths": {
-      "~/*": ["app/*"]
-    }
-  },
-  "include": ["app/**/*"]
-}
+{\n  \"compilerOptions\": {\n    \"module\": \"esnext\",\n    \"target\": \"es2022\",\n    \"moduleResolution\": \"node\",\n    \"experimentalDecorators\": true,\n    \"emitDecoratorMetadata\": true,\n    \"noEmitHelpers\": true,\n    \"lib\": [\"es2022\", \"dom\"],\n    \"baseUrl\": \".\",\n    \"paths\": {\n      \"~/*\": [\"app/*\"]\n    },\n    \"skipLibCheck\": true,\n    \"esModuleInterop\": true,\n    \"allowSyntheticDefaultImports\": true\n  },\n  \"include\": [\"app/**/*\"],\n  \"exclude\": [\"node_modules\", \"platforms\"]\n}\n
