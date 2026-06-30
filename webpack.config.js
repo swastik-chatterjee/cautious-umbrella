@@ -1,0 +1,1 @@
+const webpack = require("@nativescript/webpack");\nconst path = require("path");\n\nmodule.exports = (env) => {\n  webpack.init(env);\n  webpack.useConfig({\n    projectRoot: __dirname,\n  });\n\n  return webpack.resolveConfig();\n};\n
