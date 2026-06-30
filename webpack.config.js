@@ -1,10 +1,10 @@
 const webpack = require('@nativescript/webpack');
-const path = require('path');
 
 module.exports = (env) => {
   webpack.init(env);
-  webpack.useConfig({
-    projectRoot: __dirname,
+
+  webpack.chainWebpack((config) => {
+    // Custom webpack configuration can be added here
   });
 
   return webpack.resolveConfig();
